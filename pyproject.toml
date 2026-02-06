@@ -1,17 +1,18 @@
 [project]
 name = "project-bootstrap-generator"
 version = "0.1.0"
-description = "Un generador de proyectos rápido y versátil"
+description = "Un generador de proyectos rápido y versátil diseñado para automatizar infraestructuras profesionales."
 authors = [
-    { name = "Robert Esteban" }
+    { name = "Robert Salinas" }
 ]
+license = { text = "MIT" }
 dependencies = [
     "typer[all]>=0.9.0",
     "jinja2>=3.1.2",
     "pyyaml>=6.0.1",
     "rich>=13.0.0",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 
 [project.scripts]
 bootstrap = "bootstrap.cli:app"
