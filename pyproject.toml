@@ -32,3 +32,10 @@ omit = ["tests/*"]
 [tool.coverage.report]
 show_missing = true
 fail_under = 80
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+exclude = "templates/"
+ignore_missing_imports = true
