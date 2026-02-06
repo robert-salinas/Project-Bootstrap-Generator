@@ -1,0 +1,15 @@
+[project]
+name = "{{ project_name }}"
+version = "0.1.0"
+description = "Proyecto CLI generado"
+dependencies = [
+    "typer[all]>=0.9.0",
+]
+requires-python = ">=3.9"
+
+[project.scripts]
+{{ project_name }} = "{{ project_name }}.cli:app"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

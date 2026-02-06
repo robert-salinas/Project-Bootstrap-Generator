@@ -1,0 +1,13 @@
+projects:
+  python_cli:
+    description: "Aplicación de línea de comandos en Python con Typer"
+    template: "python_cli"
+  python_web:
+    description: "API Web moderna con FastAPI"
+    template: "python_web"
+  node_cli:
+    description: "Herramienta CLI en Node.js"
+    template: "node_cli"
+  hardware_esp32:
+    description: "Proyecto MicroPython para ESP32"
+    template: "hardware_esp32"

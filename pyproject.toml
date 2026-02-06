@@ -1,0 +1,33 @@
+[project]
+name = "project-bootstrap-generator"
+version = "0.1.0"
+description = "Un generador de proyectos rápido y versátil"
+authors = [
+    { name = "Robert Esteban" }
+]
+dependencies = [
+    "typer[all]>=0.9.0",
+    "jinja2>=3.1.2",
+    "pyyaml>=6.0.1",
+    "rich>=13.0.0",
+]
+requires-python = ">=3.9"
+
+[project.scripts]
+bootstrap = "bootstrap.cli:app"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[tool.coverage.run]
+source = ["src/bootstrap"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
