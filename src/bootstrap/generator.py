@@ -87,11 +87,11 @@ class ProjectGenerator:
                     shutil.copy2(file_path, target_file_path)
 
     def _render_string(self, source: str, context: Dict[str, Any]) -> str:
-        return self.env.from_string(source).render(**context)
+        return str(self.env.from_string(source).render(**context))
 
     def _render_file(self, template_rel_path: Path, context: Dict[str, Any]) -> str:
         template = self.env.get_template(str(template_rel_path).replace("\\", "/"))
-        return template.render(**context)
+        return str(template.render(**context))
 
 
 def load_config(config_path: Path) -> Dict[str, Any]:
