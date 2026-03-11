@@ -1,0 +1,18 @@
+"""
+Punto de entrada principal para {{ project_name }}.
+"""
+import typer
+from rich.console import Console
+
+app = typer.Typer()
+console = Console()
+
+@app.command()
+def hello(name: str = "{{ author_name }}"):
+    """
+    Saluda al usuario.
+    """
+    console.print(f"[bold green]Hello {name}![/bold green] Welcome to [bold blue]{{ project_name }}[/bold blue].")
+
+if __name__ == "__main__":
+    app()

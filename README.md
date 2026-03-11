@@ -10,39 +10,61 @@
 Iniciar un proyecto nuevo suele implicar configurar manualmente carpetas, archivos de configuración, tests y documentación. PBG automatiza este proceso en segundos, garantizando consistencia arquitectónica en todo tu ecosistema de software.
 
 ## ✨ Diferenciadores Únicos
+- 🎨 **Interfaz Gráfica Moderna:** Incluye una GUI profesional basada en CustomTkinter con el sistema de diseño RS (Dark Mode).
 - 🏗️ **Ingeniería Rigurosa:** Genera no solo código, sino también registros de decisiones de diseño (ADRs).
 - 🔗 **Extensibilidad Total:** Sistema basado en Jinja2 para crear tus propias plantillas personalizadas.
 - 🔍 **Validación Proactiva:** Previene errores comunes de nombrado y conflictos de directorios.
 
 ## 🛠️ Stack Tecnológico
 - **Lenguaje:** Python 3.11+
+- **GUI Framework:** CustomTkinter (RS Design System)
 - **CLI Framework:** Typer
 - **Templating:** Jinja2
-- **UI:** Rich
 - **Tests:** Pytest
 
-## 🚀 Instalación Rápida (< 5 min)
+## 🚀 Instalación Automática (One-Click)
+
+¡Nueva funcionalidad! Ya no necesitas usar la terminal si no quieres.
+
+1.  **Descarga el código** o clona el repositorio.
+2.  Haz doble click en el archivo **`run_app.bat`**.
+3.  El instalador automáticamente:
+    *   Creará el entorno virtual.
+    *   Instalará las dependencias.
+    *   Creará un acceso directo en tu Escritorio (**RS-Bootstrap**).
+    *   Lanzará la aplicación.
+
+> **Tip:** Para personalizar el icono del acceso directo, coloca tu propio archivo `icon.ico` dentro de la carpeta `assets/`.
+
+## 🛠️ Instalación Manual (Desarrolladores)
+
+Si prefieres tener el control total:
 
 ```bash
 # Clonar el repositorio
 git clone https://github.com/robert-salinas/Project-Bootstrap-Generator.git
 cd Project-Bootstrap-Generator
 
-# Instalar dependencias en modo editable
+# Instalar dependencias (incluyendo GUI)
 pip install -e .
 ```
 
-## 🛠️ Uso Básico
+## 🛠️ Uso
 
+### Opción A: Interfaz Gráfica (Recomendado)
+Para lanzar la aplicación con el sistema de diseño moderno:
 ```bash
-# Inicializar un proyecto Python CLI (por defecto)
+bootstrap-gui
+```
+
+### Opción B: Línea de Comandos (CLI)
+Para usuarios avanzados o scripts de automatización:
+```bash
+# Inicializar un proyecto Python CLI
 bootstrap init mi-gran-idea
 
 # Inicializar un proyecto web con FastAPI
 bootstrap init mi-web --type python_web
-
-# Listar tipos de proyectos disponibles
-bootstrap list-types
 ```
 
 ## 📝 Tipos de Proyectos Soportados

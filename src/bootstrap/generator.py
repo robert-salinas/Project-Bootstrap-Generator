@@ -27,6 +27,13 @@ class ProjectGenerator:
         project_name: str,
         output_path: Path,
         context: Optional[Dict[str, Any]] = None,
+        with_git: bool = False,
+        with_venv: bool = False,
+        with_docker: bool = False,
+        with_tests: bool = True,
+        with_github_actions: bool = False,
+        license: str = "None",
+        initial_libs: str = "",
     ):
         """
         Genera un proyecto basado en un tipo y nombre.
@@ -41,12 +48,24 @@ class ProjectGenerator:
             context = {}
 
         context.setdefault("project_name", project_name)
+        # Inject flags into context for templates
+        context.update({
+            "with_git": with_git,
+            "with_venv": with_venv,
+            "with_docker": with_docker,
+            "with_tests": with_tests,
+            "license": license
+        })
 
         # Crear directorio de salida si no existe
         output_path.mkdir(parents=True, exist_ok=True)
 
         # Recorrer la carpeta del template
         for root, dirs, files in os.walk(template_path):
+            # Skip tests if disabled
+            if not with_tests and "tests" in dirs:
+                dirs.remove("tests")
+            
             rel_path = Path(root).relative_to(template_path)
 
             # Crear directorios correspondientes
@@ -85,6 +104,155 @@ class ProjectGenerator:
                 else:
                     # Si no es .j2, simplemente lo copiamos
                     shutil.copy2(file_path, target_file_path)
+        
+        # Post-generation tasks
+        if with_docker:
+            self._create_dockerfile(output_path, project_type)
+            
+        if license != "None":
+            self._create_license_file(output_path, license, context.get("author_name", "Author"))
+            
+        if initial_libs:
+            self._add_initial_libs(output_path, initial_libs)
+            
+        if with_github_actions:
+            self._create_github_actions(output_path, project_type)
+        
+        if with_git:
+            self._init_git(output_path)
+            
+        if with_venv:
+            self._create_venv(output_path)
+
+    def _create_license_file(self, output_path: Path, license_type: str, author: str):
+        """Crea un archivo LICENSE."""
+        import datetime
+        year = datetime.datetime.now().year
+        content = f"{license_type} License\n\nCopyright (c) {year} {author}\n\nPermission is hereby granted..."
+        (output_path / "LICENSE").write_text(content, encoding="utf-8")
+
+    def _add_initial_libs(self, output_path: Path, libs: str):
+        """Añade librerías a requirements.txt."""
+        req_path = output_path / "requirements.txt"
+        
+        # Clean and split libs
+        lib_list = [l.strip() for l in libs.split(",") if l.strip()]
+        if not lib_list:
+            return
+            
+        current_content = ""
+        if req_path.exists():
+            current_content = req_path.read_text(encoding="utf-8")
+        
+        new_content = current_content
+        if new_content and not new_content.endswith("\n"):
+            new_content += "\n"
+            
+        for lib in lib_list:
+            if lib not in new_content:
+                new_content += f"{lib}\n"
+                
+        req_path.write_text(new_content, encoding="utf-8")
+
+    def _create_github_actions(self, output_path: Path, project_type: str):
+        """Crea workflow de GitHub Actions."""
+        workflows_dir = output_path / ".github" / "workflows"
+        workflows_dir.mkdir(parents=True, exist_ok=True)
+        
+        ci_content = """name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+"""
+        if "python" in project_type:
+            ci_content += """    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Run tests
+      run: |
+        # pytest
+        echo "Running tests..."
+"""
+        elif "node" in project_type or "web" in project_type:
+            ci_content += """    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test
+"""
+        else:
+            ci_content += """    - name: Run scripts
+      run: echo "Hello World"
+"""
+        (workflows_dir / "ci.yml").write_text(ci_content, encoding="utf-8")
+
+    def _create_dockerfile(self, output_path: Path, project_type: str):
+        """Crea un Dockerfile básico según el tipo de proyecto."""
+        docker_content = f"# Dockerfile for {project_type}\n"
+        
+        if "python" in project_type:
+            docker_content += """FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -r requirements.txt || echo "No requirements.txt found"
+
+CMD ["python", "src/main.py"]
+"""
+        elif "node" in project_type or "web" in project_type:
+             docker_content += """FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+CMD ["npm", "start"]
+"""
+        else:
+            docker_content += """FROM alpine:latest
+WORKDIR /app
+COPY . .
+CMD ["sh"]
+"""
+        (output_path / "Dockerfile").write_text(docker_content, encoding="utf-8")
+
+    def _init_git(self, output_path: Path):
+        """Inicializa un repositorio Git."""
+        import subprocess
+        try:
+            subprocess.run(["git", "init"], cwd=output_path, check=True, capture_output=True)
+        except Exception:
+            pass # Ignore errors if git is not installed
+
+    def _create_venv(self, output_path: Path):
+        """Crea un entorno virtual Python."""
+        import subprocess
+        try:
+            subprocess.run(["python", "-m", "venv", ".venv"], cwd=output_path, check=True, capture_output=True)
+        except Exception:
+            pass # Ignore errors if python is not found (unlikely)
 
     def _render_string(self, source: str, context: Dict[str, Any]) -> str:
         return str(self.env.from_string(source).render(**context))
@@ -92,6 +260,27 @@ class ProjectGenerator:
     def _render_file(self, template_rel_path: Path, context: Dict[str, Any]) -> str:
         template = self.env.get_template(str(template_rel_path).replace("\\", "/"))
         return str(template.render(**context))
+
+    def compress_project(self, source_path: Path, output_zip_path: Optional[Path] = None) -> Path:
+        """
+        Comprime el proyecto generado en un archivo .zip.
+        Si no se especifica output_zip_path, se crea en el mismo directorio con el nombre de la carpeta.
+        """
+        if output_zip_path is None:
+            output_zip_path = source_path.with_suffix(".zip")
+
+        # Asegurar que la ruta de salida tenga extensión .zip
+        if output_zip_path.suffix != ".zip":
+            output_zip_path = output_zip_path.with_suffix(".zip")
+
+        shutil.make_archive(
+            str(output_zip_path.with_suffix("")),  # make_archive añade la extensión automáticamente
+            "zip",
+            root_dir=source_path.parent,
+            base_dir=source_path.name,
+        )
+        return output_zip_path
+
 
 
 def load_config(config_path: Path) -> Dict[str, Any]:

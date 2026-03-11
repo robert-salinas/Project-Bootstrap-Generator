@@ -4,14 +4,21 @@ Este documento describe las decisiones de diseño y la estructura técnica de Pr
 
 ## Visión General
 
-La herramienta está diseñada como una CLI modular que separa la interfaz de usuario (Typer) de la lógica de generación (Jinja2).
+La herramienta adopta una arquitectura modular que separa la lógica de negocio (Core) de las interfaces de usuario (CLI y GUI), siguiendo el patrón MVC (Model-View-Controller) en la implementación gráfica.
 
 ## Componentes Principales
 
-1.  **CLI (cli.py):** Maneja los argumentos de entrada, la validación inicial y la presentación visual usando `rich`.
-2.  **Generador (generator.py):** El núcleo del sistema. Utiliza `Jinja2` para procesar archivos `.j2` y `shutil` para copiar archivos estáticos. Soporta renderización de nombres de archivos y directorios.
-3.  **Validadores (validators.py):** Funciones puras para asegurar la integridad de los datos de entrada.
-4.  **Templates:** Una colección de carpetas que definen la estructura de los proyectos generados.
+1.  **Core (Business Logic):**
+    -   `generator.py`: Motor de generación basado en Jinja2. Agnóstico a la interfaz.
+    -   `validators.py`: Reglas de validación reutilizables.
+
+2.  **Interfaces de Usuario:**
+    -   **GUI (`bootstrap.gui`):** Implementada con `CustomTkinter`. Sigue el **RS Design System**.
+        -   *Views:* Componentes visuales (Sidebar, MainPanel, LogConsole).
+        -   *AppConfig:* Centralización de estilos y temas.
+    -   **CLI (`bootstrap.cli`):** Interfaz de línea de comandos basada en `Typer` para automatización y entornos sin cabeza.
+
+3.  **Templates:** Una colección de carpetas que definen la estructura de los proyectos generados.
 
 ## Decisiones de Diseño (ADRs)
 
