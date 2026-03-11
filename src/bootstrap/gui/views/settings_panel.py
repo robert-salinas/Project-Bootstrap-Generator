@@ -3,7 +3,7 @@ from bootstrap.gui.config import AppConfig, UserSettings
 from bootstrap.gui.i18n import I18n
 
 class SettingsPanel(ctk.CTkFrame):
-    def __init__(self, master, log_callback=None):
+    def __init__(self, master, log_callback=None, on_back_click=None):
         super().__init__(
             master,
             corner_radius=AppConfig.RADIUS_LG,
@@ -12,25 +12,47 @@ class SettingsPanel(ctk.CTkFrame):
             border_color=AppConfig.RS_BORDER
         )
         self.log_callback = log_callback
+        self.on_back_click = on_back_click
         self.settings = UserSettings()
         
-        self.grid_columnconfigure(0, weight=1)
+        # Responsive Layout (Centered Content)
+        self.grid_columnconfigure(0, weight=1) # Spacer Left
+        self.grid_columnconfigure(1, weight=3) # Main Content
+        self.grid_columnconfigure(2, weight=1) # Spacer Right
         self.grid_rowconfigure(0, weight=0) # Title
         self.grid_rowconfigure(1, weight=1) # Form
 
-        # Title
+        # Title Header
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.header_frame.grid(row=0, column=1, padx=0, pady=(30, 20), sticky="ew")
+        self.header_frame.grid_columnconfigure(0, weight=1)
+
         self.title = ctk.CTkLabel(
-            self,
+            self.header_frame,
             text=I18n.get("title_settings"),
             font=ctk.CTkFont(size=24, weight="bold"),
-            text_color=AppConfig.RS_TEXT_PRIMARY,
+            text_color=AppConfig.RS_ORANGE,
             anchor="w"
         )
-        self.title.grid(row=0, column=0, padx=30, pady=(30, 20), sticky="ew")
+        self.title.grid(row=0, column=0, sticky="w")
+        
+        # Back Button
+        if self.on_back_click:
+            self.back_btn = ctk.CTkButton(
+                self.header_frame,
+                text="Volver",
+                width=100,
+                height=32,
+                fg_color=AppConfig.RS_BG_INPUT,
+                text_color=AppConfig.RS_TEXT_PRIMARY,
+                hover_color=AppConfig.RS_ORANGE_DARK,
+                command=self.on_back_click
+            )
+            self.back_btn.grid(row=0, column=1, sticky="e")
 
         # Settings Form (Scrollable)
         self.form_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        self.form_frame.grid(row=1, column=0, padx=30, pady=10, sticky="nsew")
+        self.form_frame.grid(row=1, column=1, padx=0, pady=10, sticky="nsew")
         self.form_frame.grid_columnconfigure(1, weight=1)
 
         # 1. Author Name
@@ -115,7 +137,7 @@ class SettingsPanel(ctk.CTkFrame):
 
         # Save Button Container
         self.save_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.save_frame.grid(row=2, column=0, padx=30, pady=30, sticky="ew")
+        self.save_frame.grid(row=2, column=1, padx=0, pady=30, sticky="ew")
         self.save_frame.grid_columnconfigure(0, weight=1)
 
         # Save Button

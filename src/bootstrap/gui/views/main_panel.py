@@ -13,28 +13,20 @@ class MainPanel(ctk.CTkFrame):
         )
         self.log_callback = log_callback
         self.settings = None  # Will be injected by App
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=0) # Title
-        self.grid_rowconfigure(1, weight=1) # Form
+        
+        # Responsive Layout (Centered Content)
+        self.grid_columnconfigure(0, weight=1) # Spacer Left
+        self.grid_columnconfigure(1, weight=3) # Main Content (~60% width)
+        self.grid_columnconfigure(2, weight=1) # Spacer Right
+        self.grid_rowconfigure(0, weight=1) # Form
 
-        # Title
-        self.title = ctk.CTkLabel(
-            self,
-            text=I18n.get("title_create"),
-            font=ctk.CTkFont(size=24, weight="bold"),
-            text_color=AppConfig.RS_TEXT_PRIMARY,
-            anchor="w"
-        )
-        self.title.grid(row=0, column=0, padx=30, pady=(30, 20), sticky="ew")
-
-        self.form_frame = ctk.CTkFrame
         # Form Container (Scrollable)
         self.form_frame = ctk.CTkScrollableFrame(
             self,
             fg_color="transparent",
             orientation="vertical"
         )
-        self.form_frame.grid(row=1, column=0, padx=30, pady=10, sticky="nsew")
+        self.form_frame.grid(row=0, column=1, padx=0, pady=10, sticky="nsew")
         self.form_frame.grid_columnconfigure(1, weight=1)
 
         # 1. Project Name
@@ -133,7 +125,7 @@ class MainPanel(ctk.CTkFrame):
 
         # 8. Action Buttons Container (Fixed Bottom in grid row 2 of MainPanel, moved OUT of Scrollable)
         self.actions_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.actions_frame.grid(row=2, column=0, padx=30, pady=20, sticky="ew")
+        self.actions_frame.grid(row=2, column=1, padx=0, pady=20, sticky="ew")
         self.actions_frame.grid_columnconfigure((0, 1), weight=1)
 
         self.create_btn = ctk.CTkButton(
