@@ -20,9 +20,9 @@ class I18n:
             "lbl_path": "Ruta de Salida:",
             "ph_name": "mi-proyecto-increible",
             "ph_path": "./proyectos",
-            "btn_browse": "Explorar",
-            "btn_create": "GENERAR PROYECTO",
-            "btn_zip": "EXPORTAR COMO ZIP",
+            "btn_browse": "📁 Explorar",
+            "btn_create": "🚀 GENERAR PROYECTO",
+            "btn_zip": "🗜️ EXPORTAR COMO ZIP",
             
             # Settings Panel
             "title_settings": "Configuración Global",
@@ -70,9 +70,9 @@ class I18n:
             "lbl_path": "Output Path:",
             "ph_name": "my-awesome-project",
             "ph_path": "./projects",
-            "btn_browse": "Browse",
-            "btn_create": "BOOTSTRAP PROJECT",
-            "btn_zip": "EXPORT AS ZIP",
+            "btn_browse": "📁 Browse",
+            "btn_create": "🚀 BOOTSTRAP PROJECT",
+            "btn_zip": "🗜️ EXPORT AS ZIP",
             
             # Settings Panel
             "title_settings": "Global Configuration",

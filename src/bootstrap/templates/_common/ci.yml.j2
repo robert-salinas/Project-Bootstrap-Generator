@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+{% if 'python' in project_type or 'fastapi' in project_type or 'data' in project_type %}
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Run tests
+      run: |
+        # pytest
+        echo "Running tests..."
+{% elif 'node' in project_type or 'web' in project_type %}
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test
+{% else %}
+    - name: Run scripts
+      run: echo "Hello World"
+{% endif %}

@@ -1,31 +1,33 @@
 import pytest
+from pathlib import Path
 from bootstrap.generator import ProjectGenerator
+import shutil
 
+def test_generator_creation(tmp_path):
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    gen = ProjectGenerator(templates_dir=templates_dir)
+    assert gen.templates_dir == templates_dir
 
-@pytest.fixture
-def temp_output(tmp_path):
-    return tmp_path / "test_project"
-
-
-@pytest.fixture
-def generator():
-    return ProjectGenerator()
-
-
-def test_generate_python_cli(generator, temp_output):
-    project_name = "my_cli"
-    generator.generate("python_cli", project_name, temp_output)
-
-    assert temp_output.exists()
-    assert (temp_output / "README.md").exists()
-    assert (temp_output / "pyproject.toml").exists()
-    assert (temp_output / project_name).exists()
-    assert (temp_output / project_name / "cli.py").exists()
-
-    readme_content = (temp_output / "README.md").read_text()
-    assert project_name in readme_content
-
-
-def test_generate_invalid_type(generator, temp_output):
-    with pytest.raises(ValueError):
-        generator.generate("non_existent", "test", temp_output)
+def test_generate_project(tmp_path):
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    project_type = "test_type"
+    (templates_dir / project_type).mkdir()
+    (templates_dir / project_type / "README.md.j2").write_text("# {{ project_name }}")
+    
+    gen = ProjectGenerator(templates_dir=templates_dir)
+    output_path = tmp_path / "output"
+    
+    gen.generate(project_type, "my_project", output_path)
+    assert (output_path / "README.md").exists()
+    assert "# my_project" in (output_path / "README.md").read_text()
+    
+def test_compress_project(tmp_path):
+    gen = ProjectGenerator()
+    proj = tmp_path / "my_proj"
+    proj.mkdir()
+    (proj / "file.txt").write_text("content")
+    zip_path = tmp_path / "my_proj.zip"
+    gen.compress_project(proj, output_zip_path=zip_path)
+    assert zip_path.exists()

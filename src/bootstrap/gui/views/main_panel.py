@@ -1,8 +1,10 @@
 import customtkinter as ctk
-from bootstrap.gui.config import AppConfig
+from bootstrap.gui.config import AppConfig, SettingsStore
 from bootstrap.gui.i18n import I18n
 from tkinter import filedialog
 from bootstrap.generator import ProjectGenerator
+import threading
+from bootstrap.validators import validate_project_name, validate_output_path
 
 class MainPanel(ctk.CTkFrame):
     def __init__(self, master, log_callback=None):
@@ -12,7 +14,7 @@ class MainPanel(ctk.CTkFrame):
             fg_color=AppConfig.RS_SURFACE
         )
         self.log_callback = log_callback
-        self.settings = None  # Will be injected by App
+        self.settings = SettingsStore().settings  # Injected directly via Singleton
         
         # Responsive Layout (Centered Content)
         self.grid_columnconfigure(0, weight=1) # Spacer Left
@@ -30,10 +32,17 @@ class MainPanel(ctk.CTkFrame):
         self.form_frame.grid_columnconfigure(1, weight=1)
 
         # 1. Project Name
-        self._create_row(I18n.get("lbl_name"), 
-                         ctk.CTkEntry(self.form_frame, placeholder_text=I18n.get("ph_name"), height=32,
-                                      fg_color=AppConfig.RS_BG_INPUT, border_color=AppConfig.RS_ORANGE_DARK, text_color=AppConfig.RS_TEXT_PRIMARY),
-                         0, bind_key_release=True)
+        self.name_container = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        self.name_container.grid_columnconfigure(0, weight=1)
+        self.name_entry = ctk.CTkEntry(self.name_container, placeholder_text=I18n.get("ph_name"), height=32,
+                                      fg_color=AppConfig.RS_BG_INPUT, border_color=AppConfig.RS_ORANGE_DARK, text_color=AppConfig.RS_TEXT_PRIMARY)
+        self.name_entry.grid(row=0, column=0, sticky="ew")
+        self.name_entry.bind("<KeyRelease>", self._on_input_change)
+        self.name_error = ctk.CTkLabel(self.name_container, text="", text_color=AppConfig.RS_ERROR, font=ctk.CTkFont(size=12), height=14)
+        self.name_error.grid(row=1, column=0, sticky="w", pady=(2, 0))
+        self.name_error.grid_remove()
+        
+        self._create_row(I18n.get("lbl_name"), self.name_container, 0)
 
         # 2. Project Type
         self.type_combo = ctk.CTkComboBox(
@@ -53,7 +62,10 @@ class MainPanel(ctk.CTkFrame):
         self._create_row(I18n.get("lbl_type"), self.type_combo, 1)
 
         # 3. Output Path
-        self.path_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        self.path_container = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        self.path_container.grid_columnconfigure(0, weight=1)
+        self.path_frame = ctk.CTkFrame(self.path_container, fg_color="transparent")
+        self.path_frame.grid(row=0, column=0, sticky="ew")
         self.path_frame.grid_columnconfigure(0, weight=1)
         self.path_entry = ctk.CTkEntry(
             self.path_frame, placeholder_text=I18n.get("ph_path"), height=32,
@@ -63,12 +75,17 @@ class MainPanel(ctk.CTkFrame):
         self.path_entry.bind("<KeyRelease>", self._on_input_change)
         
         self.browse_btn = ctk.CTkButton(
-            self.path_frame, text="...", width=40, height=32,
+            self.path_frame, text=I18n.get("btn_browse"), width=40, height=32,
             fg_color=AppConfig.RS_BG_MAIN, hover_color=AppConfig.RS_ORANGE_DARK,
             text_color=AppConfig.RS_TEXT_PRIMARY, command=self._browse_folder
         )
         self.browse_btn.grid(row=0, column=1)
-        self._create_row(I18n.get("lbl_path"), self.path_frame, 2)
+        
+        self.path_error = ctk.CTkLabel(self.path_container, text="", text_color=AppConfig.RS_ERROR, font=ctk.CTkFont(size=12), height=14)
+        self.path_error.grid(row=1, column=0, sticky="w", pady=(2, 0))
+        self.path_error.grid_remove()
+
+        self._create_row(I18n.get("lbl_path"), self.path_container, 2)
 
         # 4. License
         self.license_combo = ctk.CTkComboBox(
@@ -128,12 +145,16 @@ class MainPanel(ctk.CTkFrame):
         self.actions_frame.grid(row=2, column=1, padx=0, pady=20, sticky="ew")
         self.actions_frame.grid_columnconfigure((0, 1), weight=1)
 
+        self.progress_bar = ctk.CTkProgressBar(self.actions_frame, mode="indeterminate", progress_color=AppConfig.RS_SUCCESS, fg_color=AppConfig.RS_BG_INPUT)
+        self.progress_bar.grid(row=0, column=0, columnspan=2, padx=5, pady=(0, 10), sticky="ew")
+        self.progress_bar.grid_remove()
+
         self.create_btn = ctk.CTkButton(
             self.actions_frame, text=I18n.get("btn_create"), font=ctk.CTkFont(size=16, weight="bold"),
             fg_color=AppConfig.RS_ORANGE, hover_color=AppConfig.RS_ORANGE_DARK, height=40,
             corner_radius=AppConfig.RADIUS_LG, command=self._on_create
         )
-        self.create_btn.grid(row=0, column=0, padx=(0, 5), sticky="ew")
+        self.create_btn.grid(row=1, column=0, padx=(0, 5), sticky="ew")
 
         self.zip_btn = ctk.CTkButton(
             self.actions_frame, text=I18n.get("btn_zip"), font=ctk.CTkFont(size=16, weight="bold"),
@@ -141,7 +162,7 @@ class MainPanel(ctk.CTkFrame):
             border_color=AppConfig.RS_ORANGE, height=40, text_color=AppConfig.RS_TEXT_PRIMARY,
             corner_radius=AppConfig.RADIUS_LG, command=self._on_create_zip
         )
-        self.zip_btn.grid(row=0, column=1, padx=(5, 0), sticky="ew")
+        self.zip_btn.grid(row=1, column=1, padx=(5, 0), sticky="ew")
         
         # Initial validation/preview
         self._update_preview()
@@ -152,7 +173,6 @@ class MainPanel(ctk.CTkFrame):
         lbl.grid(row=row, column=0, padx=10, pady=5, sticky="w")
         widget.grid(row=row, column=1, padx=10, pady=5, sticky="ew")
         if bind_key_release and isinstance(widget, ctk.CTkEntry):
-             self.name_entry = widget # Hack to keep ref
              widget.bind("<KeyRelease>", self._on_input_change)
 
     def _create_switch(self, text, r, c):
@@ -255,21 +275,46 @@ class MainPanel(ctk.CTkFrame):
             self.venv_switch.configure(state="disabled")
             
         # Update UI
+        self._validate_name()
         self._validate_path()
         self._update_preview()
+        
+    def _validate_name(self):
+        name = self.name_entry.get()
+        if not name:
+            self.name_entry.configure(border_color=AppConfig.RS_ORANGE_DARK)
+            self.name_error.grid_remove()
+            return
+            
+        import re
+        if not re.match(r"^[a-zA-Z0-9_-]+$", name):
+            self.name_entry.configure(border_color=AppConfig.RS_ERROR)
+            self.name_error.configure(text="Nombre inválido (solo letras, números, _, -)")
+            self.name_error.grid()
+        else:
+            self.name_entry.configure(border_color=AppConfig.RS_SUCCESS)
+            self.name_error.grid_remove()
 
     def _validate_path(self):
         path_str = self.path_entry.get()
         if not path_str:
             self.path_entry.configure(border_color=AppConfig.RS_ORANGE_DARK)
+            self.path_error.grid_remove()
             return
 
         from pathlib import Path
         path = Path(path_str)
-        if path.exists() and path.is_dir():
-            self.path_entry.configure(border_color=AppConfig.RS_SUCCESS)
-        else:
+        if path.exists() and path.is_dir() and any(path.iterdir()):
             self.path_entry.configure(border_color=AppConfig.RS_ERROR)
+            self.path_error.configure(text="El directorio ya existe y no está vacío")
+            self.path_error.grid()
+        elif path.exists() and not path.is_dir():
+            self.path_entry.configure(border_color=AppConfig.RS_ERROR)
+            self.path_error.configure(text="La ruta no es un directorio válido")
+            self.path_error.grid()
+        else:
+            self.path_entry.configure(border_color=AppConfig.RS_SUCCESS)
+            self.path_error.grid_remove()
 
     def _update_preview(self):
         name = self.name_entry.get() or "[Project Name]"
@@ -320,10 +365,23 @@ class MainPanel(ctk.CTkFrame):
             self._log(I18n.get("err_name_req"), "ERROR")
             return
             
+        if not validate_project_name(name):
+            self._log("Nombre de proyecto inválido. Use solo letras, números, guiones y guiones bajos.", "ERROR")
+            return
+            
         from pathlib import Path
         output_path = Path(path) if path else Path.cwd() / name
         
+        if not validate_output_path(output_path):
+            self._log(f"La ruta '{output_path}' ya existe y no está vacía.", "ERROR")
+            return
+        
         self._log(I18n.get("log_start", name=name, type=p_type), "INFO")
+        
+        self.progress_bar.grid()
+        self.progress_bar.start()
+        self.create_btn.configure(state="disabled")
+        self.zip_btn.configure(state="disabled")
         
         try:
             generator = ProjectGenerator()
@@ -340,12 +398,26 @@ class MainPanel(ctk.CTkFrame):
                 "initial_libs": self.libs_entry.get()
             }
             
-            # En una app real, esto debería ir en un hilo aparte para no congelar la GUI
-            generator.generate(p_type, name, output_path, context=context, **opts)
-            self._log(I18n.get("success_project", name=name, path=output_path), "SUCCESS")
+            def run_generation():
+                try:
+                    generator.generate(p_type, name, output_path, context=context, **opts)
+                    self.after(0, lambda: self._log(I18n.get("success_project", name=name, path=output_path), "SUCCESS"))
+                except Exception as e:
+                    self.after(0, lambda: self._log(I18n.get("err_project", error=str(e)), "ERROR"))
+                finally:
+                    self.after(0, self._stop_progress)
+
+            threading.Thread(target=run_generation, daemon=True).start()
             
         except Exception as e:
+            self._stop_progress()
             self._log(I18n.get("err_project", error=str(e)), "ERROR")
+
+    def _stop_progress(self):
+        self.progress_bar.stop()
+        self.progress_bar.grid_remove()
+        self.create_btn.configure(state="normal")
+        self.zip_btn.configure(state="normal")
 
     def _on_create_zip(self):
         name = self.name_entry.get().strip()
@@ -355,11 +427,24 @@ class MainPanel(ctk.CTkFrame):
         if not name:
             self._log(I18n.get("err_name_req"), "ERROR")
             return
+            
+        if not validate_project_name(name):
+            self._log("Nombre de proyecto inválido. Use solo letras, números, guiones y guiones bajos.", "ERROR")
+            return
 
         from pathlib import Path
         output_path = Path(path) if path else Path.cwd() / name
+        
+        if not validate_output_path(output_path):
+            self._log(f"La ruta '{output_path}' ya existe y no está vacía.", "ERROR")
+            return
 
         self._log(I18n.get("log_zip_start", name=name, type=p_type), "INFO")
+
+        self.progress_bar.grid()
+        self.progress_bar.start()
+        self.create_btn.configure(state="disabled")
+        self.zip_btn.configure(state="disabled")
 
         try:
             generator = ProjectGenerator()
@@ -376,11 +461,20 @@ class MainPanel(ctk.CTkFrame):
                 "initial_libs": self.libs_entry.get()
             }
             
-            # 1. Generar proyecto temporalmente
-            generator.generate(p_type, name, output_path, context=context, **opts)
+            def run_generation_zip():
+                try:
+                    # 1. Generar proyecto
+                    generator.generate(p_type, name, output_path, context=context, **opts)
+                    # 2. Comprimir
+                    zip_path = generator.compress_project(output_path)
+                    self.after(0, lambda: self._log(I18n.get("success_zip", path=zip_path), "SUCCESS"))
+                except Exception as e:
+                    self.after(0, lambda: self._log(I18n.get("err_zip", error=str(e)), "ERROR"))
+                finally:
+                    self.after(0, self._stop_progress)
             
-            # 2. Comprimir
-            zip_path = generator.compress_project(output_path)
-            self._log(I18n.get("success_zip", path=zip_path), "SUCCESS")
+            threading.Thread(target=run_generation_zip, daemon=True).start()
+            
         except Exception as e:
+            self._stop_progress()
             self._log(I18n.get("err_zip", error=str(e)), "ERROR")

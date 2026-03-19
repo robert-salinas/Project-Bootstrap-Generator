@@ -10,10 +10,11 @@
 Iniciar un proyecto nuevo suele implicar configurar manualmente carpetas, archivos de configuración, tests y documentación. PBG automatiza este proceso en segundos, garantizando consistencia arquitectónica en todo tu ecosistema de software.
 
 ## ✨ Diferenciadores Únicos
-- 🎨 **Interfaz Gráfica Moderna:** Incluye una GUI profesional basada en CustomTkinter con el sistema de diseño RS (Dark Mode).
-- 🏗️ **Ingeniería Rigurosa:** Genera no solo código, sino también registros de decisiones de diseño (ADRs).
-- 🔗 **Extensibilidad Total:** Sistema basado en Jinja2 para crear tus propias plantillas personalizadas.
-- 🔍 **Validación Proactiva:** Previene errores comunes de nombrado y conflictos de directorios.
+- 🎨 **Interfaz Gráfica Fluida & Premium:** GUI profesional en CustomTkinter con iconos interactivos, barra de progreso reactiva (Multithreading asíncrono) visualizando el sistema de diseño RS. ¡Cero congelamientos!
+- 🏗️ **Ingeniería Rigurosa y ADRs:** Genera no solo código, sino verdaderos Registros de Decisiones de Arquitectura (ADRs) y contenedores limpios usando el motor de Jinja2.
+- 🔗 **Extensibilidad Total:** Sistema de plantillas globales basado 100% en Jinja2 (incluyendo `Dockerfile` y workflows CI/CD de GitHub Actions desacoplados).
+- 🔍 **Validación Activa y Segura:** Validación en tiempo real (In-line) dentro de la UI para prevenir nombres maliciosos y errores críticos de disco antes de ejecutar I/O.
+- 🛡️ **Arquitectura Robusta:** Patrón Singleton para el estado global de configuración (`SettingsStore`), Global Crash Logging forense oculto (`crash.log`) y 100% Test Coverage en lógica Core validada por Pytest.
 
 ## 🛠️ Stack Tecnológico
 - **Lenguaje:** Python 3.11+

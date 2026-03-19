@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from bootstrap.gui.config import AppConfig, UserSettings
+from bootstrap.gui.config import AppConfig, UserSettings, SettingsStore
 from bootstrap.gui.i18n import I18n
 
 class SettingsPanel(ctk.CTkFrame):
@@ -13,7 +13,7 @@ class SettingsPanel(ctk.CTkFrame):
         )
         self.log_callback = log_callback
         self.on_back_click = on_back_click
-        self.settings = UserSettings()
+        self.settings = SettingsStore().settings
         
         # Responsive Layout (Centered Content)
         self.grid_columnconfigure(0, weight=1) # Spacer Left

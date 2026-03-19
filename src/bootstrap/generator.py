@@ -50,10 +50,12 @@ class ProjectGenerator:
         context.setdefault("project_name", project_name)
         # Inject flags into context for templates
         context.update({
+            "project_type": project_type,
             "with_git": with_git,
             "with_venv": with_venv,
             "with_docker": with_docker,
             "with_tests": with_tests,
+            "with_github_actions": with_github_actions,
             "license": license
         })
 
@@ -107,7 +109,8 @@ class ProjectGenerator:
         
         # Post-generation tasks
         if with_docker:
-            self._create_dockerfile(output_path, project_type)
+            content = self._render_file(Path("_common/Dockerfile.j2"), context)
+            (output_path / "Dockerfile").write_text(content, encoding="utf-8")
             
         if license != "None":
             self._create_license_file(output_path, license, context.get("author_name", "Author"))
@@ -116,7 +119,16 @@ class ProjectGenerator:
             self._add_initial_libs(output_path, initial_libs)
             
         if with_github_actions:
-            self._create_github_actions(output_path, project_type)
+            workflows_dir = output_path / ".github" / "workflows"
+            workflows_dir.mkdir(parents=True, exist_ok=True)
+            content = self._render_file(Path("_common/ci.yml.j2"), context)
+            (workflows_dir / "ci.yml").write_text(content, encoding="utf-8")
+        
+        # Generation Promise: Architecture Decision Record (ADR)
+        docs_adr_dir = output_path / "docs" / "adr"
+        docs_adr_dir.mkdir(parents=True, exist_ok=True)
+        adr_content = self._render_file(Path("_common/0001-initial-architecture.md.j2"), context)
+        (docs_adr_dir / "0001-initial-architecture.md").write_text(adr_content, encoding="utf-8")
         
         if with_git:
             self._init_git(output_path)
@@ -154,89 +166,6 @@ class ProjectGenerator:
                 
         req_path.write_text(new_content, encoding="utf-8")
 
-    def _create_github_actions(self, output_path: Path, project_type: str):
-        """Crea workflow de GitHub Actions."""
-        workflows_dir = output_path / ".github" / "workflows"
-        workflows_dir.mkdir(parents=True, exist_ok=True)
-        
-        ci_content = """name: CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-"""
-        if "python" in project_type:
-            ci_content += """    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Run tests
-      run: |
-        # pytest
-        echo "Running tests..."
-"""
-        elif "node" in project_type or "web" in project_type:
-            ci_content += """    - name: Use Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18.x'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
-"""
-        else:
-            ci_content += """    - name: Run scripts
-      run: echo "Hello World"
-"""
-        (workflows_dir / "ci.yml").write_text(ci_content, encoding="utf-8")
-
-    def _create_dockerfile(self, output_path: Path, project_type: str):
-        """Crea un Dockerfile básico según el tipo de proyecto."""
-        docker_content = f"# Dockerfile for {project_type}\n"
-        
-        if "python" in project_type:
-            docker_content += """FROM python:3.9-slim
-
-WORKDIR /app
-
-COPY . .
-
-RUN pip install --no-cache-dir -r requirements.txt || echo "No requirements.txt found"
-
-CMD ["python", "src/main.py"]
-"""
-        elif "node" in project_type or "web" in project_type:
-             docker_content += """FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-
-EXPOSE 3000
-CMD ["npm", "start"]
-"""
-        else:
-            docker_content += """FROM alpine:latest
-WORKDIR /app
-COPY . .
-CMD ["sh"]
-"""
-        (output_path / "Dockerfile").write_text(docker_content, encoding="utf-8")
 
     def _init_git(self, output_path: Path):
         """Inicializa un repositorio Git."""

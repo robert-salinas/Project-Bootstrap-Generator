@@ -55,3 +55,12 @@ class UserSettings:
     branding_theme: str = "RS Dark"  # "RS Dark" or "RS Light"
     app_theme_mode: str = "Dark" # "Dark" or "Light"
     language: str = "es" # "es" or "en"
+
+class SettingsStore:
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(SettingsStore, cls).__new__(cls)
+            cls._instance.settings = UserSettings()
+        return cls._instance

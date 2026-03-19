@@ -4,7 +4,29 @@ from bootstrap.gui.config import AppConfig
 from bootstrap.gui.views.main_panel import MainPanel
 from bootstrap.gui.views.settings_panel import SettingsPanel
 from bootstrap.gui.views.log_console import LogConsole
+import logging
+import sys
 
+def setup_crash_logging():
+    log_dir = os.path.join(os.getenv('APPDATA', os.path.expanduser('~')), 'RS-Bootstrap')
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, 'crash.log')
+    
+    logging.basicConfig(
+        filename=log_file,
+        level=logging.ERROR,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    def handle_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+        logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+    sys.excepthook = handle_exception
+
+setup_crash_logging()
 
 class App(ctk.CTk):
     def __init__(self):
@@ -53,14 +75,18 @@ class App(ctk.CTk):
         )
         self.app_title.pack(anchor="w")
         
+        from bootstrap.gui.config import UserSettings
+        default_settings = UserSettings()
+        
         self.app_subtitle = ctk.CTkLabel(
             self.title_frame,
-            text="By Robert Salinas", # Could be dynamic from settings but hardcoded per request
+            text=f"By {default_settings.author_name}",
             font=ctk.CTkFont(size=12),
             text_color=AppConfig.RS_TEXT_SECONDARY,
             anchor="w"
         )
         self.app_subtitle.pack(anchor="w")
+
 
         # Header Button (Settings)
         self.settings_btn = ctk.CTkButton(
@@ -88,9 +114,6 @@ class App(ctk.CTk):
         # Initialize Views
         self.views = {}
         self._init_views()
-        
-        # Share settings
-        self.views["create"].settings = self.views["settings"].settings
         
         # Show default view
         self.current_view = "create"
